@@ -1,0 +1,3 @@
+# val_AccountCodes.txt
+required    20
+lookup      *      20:1  ../accountcodes.csv
