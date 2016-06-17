@@ -1,8 +1,9 @@
-[h1] PiTXi - Paypal Invoices To Xero Invoices
-(It's actually Paypal PAYMENTS To Xero Invoices, but PpTXi doesn't sound as cool)
+# PiTXi - Paypal Invoices To Xero Invoices #
+(It's actually Paypal _PAYMENTS_ To Xero Invoices, but PpTXi doesn't sound as cool)
 
-Downloads latest payments CSV from from sftp://reports.paypal.com,
-merges them and creates a csv that can be uploaded to Xero as new invoices.
+This script downloads the latest payments CSV(s) from from sftp://reports.paypal.com, merges them, and creates a csv that can be uploaded to Xero as new invoices.
+
+If you have account codes listed in two columns in a separate file (accountcodes.csv) then it will enter them into the CSV file for you. No more coding hundreds of transactions!
 
 Usage : ./$bname [-d -v -t | -h] {one option only}
   -d  download missing files from Paypal, store them in /PPLCSVfiles
