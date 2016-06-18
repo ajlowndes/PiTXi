@@ -1,0 +1,13 @@
+# ignore these system files
+.DS_Store
+
+#ignore these files and folders to that PiTXi generates
+.LocalFileList.txt
+.RemoteFileList.txt
+missingfiles.txt
+PPLCSVFiles
+importToXero*
+.credentials
+
+#ignore my notes file
+pitxi programming notes
