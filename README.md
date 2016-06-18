@@ -1,5 +1,5 @@
 # PiTXi - Paypal Invoices To Xero Invoices #
-(It's actually Paypal _INCOMING PAYMENTS_ To Xero Invoices, but PipTXi doesn't sound as cool)
+(It's actually Paypal _SALES_ To Xero Invoices, but PipTXi doesn't sound as cool)
 
 ##Introduction##
 Xero has the ability to capture Paypal transactions, treating it more or less like a bank account. But in some cases a LOT of transactions are created every day, and matching invoices are not created in Xero automatically. Compounding the problem, all that ends up in Xero is the name and email of the payee (which might or might not be the name of your customer -e.g. if a parent or friend pays for someone), a transaction number (which Paypal generates and does NOT match any invoice numbers your Point Of Sale system might have generated), date etc. This is often not enough to quickly identify and code the transaction. Paypal does have a lot more info on their system about the transaction though.
