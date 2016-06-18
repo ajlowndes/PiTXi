@@ -30,7 +30,7 @@ Open up a shell prompt and navigate to your folder. Run `chmod u+x pitxi.sh` to 
 
 ##Usage##
 ```
-./pitxi.sh [-d -u -v -t -a -h] {one option only}
+./pitxi [-d -u -v -t -a -h] {one option only}
   -d  download missing files from Paypal, store them in /PPLCSVfiles
   -u  download using a new sftp username/password
   -v  validate against accountcodes.csv and report any missing ones
