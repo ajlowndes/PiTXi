@@ -24,8 +24,8 @@ EOF
 
 dl () # connects to sftp://reports.paypal.com, downloads any missing files to /PPLCSVFiles
 {
-	if [ ! -d PPLCSVFiles ]; then
-    read -p "The PPLCSVFiles directory doesn't exist. this means the last 45 days of transactions will be downloaded. Are you happy with this?
+  if [ ! -d PPLCSVFiles ]; then
+    read -p "The PPLCSVFiles directory doesn't exist. This means the last 45 days of transactions will be downloaded. Are you happy with this?
 y/n " yn
     while true; do
       case $yn in
@@ -43,14 +43,16 @@ y/n ";;
       esac
     done
   fi
-  if [ ! -f .credentials ] || [ "$1" == "useNewCredentials" ]; then
+  security find-generic-password -s paypalsftp >/dev/null 2>/dev/null #test if entry exists in osx keychain
+  if [ $? -ne 0 ] || [ "$1" == "useNewCredentials" ]; then
     echo "Please enter username for sftp://reports.paypal.com"
     read username
     echo $username > .credentials_tmp
     read -p "Password:" -s pass
     echo $pass >> .credentials_tmp
   else
-    cp .credentials .credentials_tmp
+    echo `security find-generic-password -s paypalsftp | grep "acct" | cut -d \" -f 4` > .credentials_tmp
+    echo `security find-generic-password -s paypalsftp -w` >> .credentials_tmp
   fi
   echo "
 Connecting to Paypal and downloading missing files
@@ -62,12 +64,16 @@ Connecting to Paypal and downloading missing files
   expect "password:"
 	send "[exec sed "2p;d" .credentials_tmp]\n"
   expect {
-    "sftp>"     { exp_continue }
-    timeout     {puts "*** Connection timed out. Check connection and verify the username/password are correct"; exit 1}
+    "sftp>" {
+    # exp_continue
+    } timeout {
+    send_user "
+  *** Connection timed out. Check connection and verify the username/password"; exit 1
+    }
   }
   puts "Getting Remote File List"
-	log_file -noappend .RemoteFileList.txt
-	send -h "ls -1\n"
+  log_file -noappend .RemoteFileList.txt
+  send -h "ls -1\n"
 	expect "sftp>"
   log_file
 	system sed -i '' '/ls -1/d' ./.RemoteFileList.txt
@@ -75,8 +81,6 @@ Connecting to Paypal and downloading missing files
 	system ls -1 PPLCSVFiles/ > .LocalFileList.txt
   puts "Comparing with files in /PPLCSVFiles"
 	sleep 1
-	#;send "!diff -aw --changed-group-format='%<' --unchanged-group-format='' .RemoteFileList.txt .LocalFileList.txt > missingfiles.txt\n"
-
   set rc [catch {exec diff -aw --changed-group-format=%< --unchanged-group-format= .RemoteFileList.txt .LocalFileList.txt} output]
   if {$rc == 0} {
     puts "no difference"
@@ -114,21 +118,21 @@ There are no new files on the Paypal server."
 Missing Files have been downloaded, the list is stored in missingfiles.txt."
 	}
 EOS
-# if [ -n ${username} ]; then
-if [ ! -f .credentials ] || [ "$1" == "useNewCredentials" ]; then
+security find-generic-password -s paypalsftp >/dev/null 2>/dev/null #test if entry exists in osx keychain
+if [ $? -ne 0 ] || [ "$1" == "useNewCredentials" ]; then
   while true; do
-  read -p "Do you want to save these login details for next time?
+  read -p "
+Do you want to save these login details for next time?
 y/n " yn
     case $yn in
       [Yy]* )
-        mv -f .credentials_tmp .credentials
-        chmod 700 .credentials
+        security add-generic-password -s paypalsftp -a `sed '1p;d' .credentials_tmp` -w `sed '2p;d' .credentials_tmp` -U
+        rm -f .credentials_tmp
         echo "new credentials saved."
         break
         ;;
       [Nn]* )
         rm -f .credentials_tmp
-        echo "these credentials were not saved."
         exit 1
         ;;
       * ) echo "Please answer yes or no.
