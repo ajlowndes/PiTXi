@@ -41,13 +41,20 @@ Open up a shell prompt and navigate to your folder. Run `chmod u+x pitxi.sh` to 
 
 ##Recommended workflow##
 Once you've set up PiTXi for the first time and have your sftp credentials, here's what I would do:
-1. Wait a day for the first CSV file to show up in the sftp server. Sorry that's a Paypal thing.
-2. Once it's there, open up a shell prompt and navigate to your folder. Run `./pitxi.sh -d` which will connect to the sftp server, collect a list of files and download them all to a new folder called "PPLCSVFiles". In future if you run this command it will only download new files.
-3. The list of files that have been downloaded is in a file called "missingfiles.txt". That list defines what will be combined later.
-4. Run `./pitxi.sh -v`. This will spit out a list of descriptions that couldn't be found in accountcodes.csv, if it exists. You can updated this file, adding any new codes by opening it (`open accountcodes.csv`)
-4. Run `./pitxi.sh -t`. This will create a new file called "importToXero[DATE].csv". You are welcome to run this again and again until all of the account codes are there, or you are happy with the ones that are missing.
-5. Log into Xero, go to "Invoices" and click the "Import" button. There you can upload the csv file. The invoices will be imported as drafts, which you can probably "Select All" and "Approve".
-6. Now you should be able to go back to your Paypal account in Xero and click the "Reconcile" tab. There you will find that most of the transactions have matching invoices, all ready for you to click "OK". Make sure you check the match carefully before you click "OK"!
+
+1.  Wait a day for the first CSV file to show up in the sftp server. Sorry that's a Paypal thing.
+
+2.  Once it's there, open up a shell prompt and navigate to your folder. Run `./pitxi.sh -d` which will connect to the sftp server, collect a list of files and download them all to a new folder called "PPLCSVFiles". In future if you run this command it will only download new files.
+
+3.  The list of files that have been downloaded is in a file called "missingfiles.txt". That list defines what will be combined later.
+
+4.  Run `./pitxi.sh -v`. This will spit out a list of descriptions that couldn't be found in accountcodes.csv, if it exists. You can updated this file, adding any new codes by opening it (`open accountcodes.csv`)
+
+5.  Run `./pitxi.sh -t`. This will create a new file called "importToXero[DATE].csv". You are welcome to run this again and again until all of the account codes are there, or you are happy with the ones that are missing.
+
+6.  Log into Xero, go to "Invoices" and click the "Import" button. There you can upload the csv file. The invoices will be imported as drafts, which you can probably "Select All" and "Approve".
+
+7.  Now you should be able to go back to your Paypal account in Xero and click the "Reconcile" tab. There you will find that most of the transactions have matching invoices, all ready for you to click "OK". Make sure you check the match carefully before you click "OK"!
 
 ##Where it won't work for you##
 Unfortunately Paypal's sftp service only allows transaction level reporting - that means that "Shopping Cart" items are not detailed in separate lines. So in other words, a proper description (and proper coding to your AccountCodes) will only show up if the payment was being made for just one item, not a shopping cart of them. If you have many "Shopping Cart" transactions, perhaps check out Zapier's [Create new Xero invoices for new PayPal sales](https://zapier.com/zapbook/zaps/2122/create-new-xero-invoices-for-new-paypal-sales/) instead as it has a different way of doing this.
