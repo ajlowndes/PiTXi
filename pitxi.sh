@@ -14,7 +14,7 @@ usage () #usage instructions
   Usage : ./$bname [-d -v -t | -h] {one option only}
     -d  download missing files from Paypal, store them in /PPLCSVfiles
     -u  download using a new sftp username/password
-    -v  validate against accountcodes.csv and report any missing ones
+    -v  validate against lookupvalues.csv and report any missing ones
     -t  export output file. must have run -d first
     -h  display this help text.
 
@@ -147,20 +147,35 @@ vl () #Validates the paypal data against Account Codes in a separate file (kind 
 {
 	#test for existence of the PPLCSVFiles folder
   if [ ! -d PPLCSVFiles ]; then
-    echo "the folder PPLCSVFiles doesn't exist. run ./"$bname" -d first"
+    echo "the folder PPLCSVFiles doesn't exist. Run ./"$bname" -d first"
     exit 1
   fi
   #test for existence of .val_AccountCodes.txt, create it if not there.
 	if [ ! -f .val_AccountCodes.txt ]; then
 		echo "# .val_AccountCodes.txt
 required    23
-lookup      *      23:1  ../accountcodes.csv" > .val_AccountCodes.txt
+lookup      *      23:1  ../lookupvalues.csv" > .val_AccountCodes.txt
 	fi
 	#test for existence of accountcodes.txt
-	if [ ! -f accountcodes.csv ]; then
-		echo "accountcodes.csv missing. Nothing to validate against!
-		"
-		exit 1
+	if [ ! -f lookupvalues.csv ]; then
+    while true; do
+		  read -p "lookupvalues.csv missing. Nothing to validate against!
+Do you want to create it with the left column pre-populated with missing accountcodes?
+y/n" yn
+      case $yn in
+        [Yy]* )
+          echo "PaypalItemName,AccountCode,TaxType,TrackingName1,TrackingOption1,TrackingName2,TrackingOption2,InventoryItemCode" > lookupvalues.csv
+          echo "lookupvalues.csv created. continuing"
+          vl AddMissing
+          exit 0
+          ;;
+        [Nn]* )
+          exit 1
+          ;;
+        * ) echo "Please answer yes or no.
+y/n ";;
+      esac
+    done
 	fi
 	#test for existence of missingfiles.txt.
 	if [ ! -f missingfiles.txt ]; then
@@ -177,11 +192,11 @@ lookup      *      23:1  ../accountcodes.csv" > .val_AccountCodes.txt
   	csvfix remove -fc 0:6 |
   	csvfix validate -vf ../.val_AccountCodes.txt -ec -ifn |
   	grep "lookup of '" |
-    #sed 's/.{10}//;s/.{27}$//'
-    sed -l "s/lookup of '//;s/' in ..\/accountcodes.csv failed//"
+    sed -l "s/lookup of '//;s/' in ..\/lookupvalues.csv failed//" |
+    if [ $1 = "AddMissing" ]; then tee lookupvalues.csv fi
   	cd ..
   	echo "
-You need to add the missing account data above (if any) to accountcodes.csv. Then run ./"$bname" -t"
+You need to add the missing account data above (if any) to lookupvalues.csv. Then run ./"$bname" -t"
   else
     echo "There were no new files on the Paypal server. Check again with ./"$bname" -d"
   fi
@@ -191,13 +206,13 @@ You need to add the missing account data above (if any) to accountcodes.csv. The
 tl () #performs the merging and conversion from paypal csv files into to a file that can be uploaded to Xero.
 {
 	#test for existence of accountcodes.txt
-	if [ ! -f accountcodes.csv ]; then
+	if [ ! -f lookupvalues.csv ]; then
   		while true; do
-	  		read -p "accountcodes.csv missing. Run anyway?
+	  		read -p "lookupvalues.csv missing. Run anyway?
 y/n " yn
 	     	case $yn in
 	  	    [Yy]* )
-					   touch accountcodes.csv
+					   touch lookupvalues.csv
 					   echo "Warning: the AccountCodes column will be empty.
 					   "
 					  break
@@ -229,7 +244,7 @@ y/n ";;
   	csvfix eval -r 11,'($11)/100' -ifn |
   	csvfix eval -if 'match($10,"DR")' -r '11,-$11' -r '11,$11' |
     csvfix put -p 71 -v "1" |
-  	csvfix join -f 24:1 -oj - ../accountcodes.csv |
+  	csvfix join -f 24:1 -oj - ../lookupvalues.csv |
   	csvfix order -f 50,22,33,34,79,79,35:38,4,2,8,9,78,24,71,11,79,72:77,12,79 -hdr "*ContactName,EmailAddress,POAddressLine1,POAddressLine2,POAddressLine3,POAddressLine4,POCity,PORegion,POPostalCode,POCountry,*InvoiceNumber,Reference,*InvoiceDate,*DueDate,InventoryItemCode,*Description,*Quantity,*UnitAmount,Discount,*AccountCode,*TaxType,TrackingName1,TrackingOption1,TrackingName2,TrackingOption2,Currency,BrandingTheme" -o ../importToXero$(date +%F).csv
   	cd ..
 

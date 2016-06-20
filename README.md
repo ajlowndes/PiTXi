@@ -9,7 +9,7 @@ So there needs to be a way to collect the extra transaction data from Paypal, tr
 ##What it does##
 This command line script downloads the latest daily CSV file(s) from from sftp://reports.paypal.com, merges them, and creates a csv that can be imported to Xero as new invoices.
 
-If you have a separate file (accountcodes.csv) with descriptions and account codes listed in two columns then PiTXi will enter them into the CSV file for you. 
+If you have a separate file (lookupvalues.csv) with descriptions and AccountCode, TaxType, TrackingNames, and Tracking Options listed in two columns then PiTXi will enter them into the CSV file for you. Note that at least the TaxTypes must be entered or the upload will fail.
 
 So after the import into Xero, you just need to go to your Paypal bank account, click on the "reconcile" tab and click "OK" to confirm each payment matches up with the correct uploaded invoice. Much faster than manually coding hundreds/thousands of transactions!
 
@@ -24,16 +24,16 @@ So after the import into Xero, you just need to go to your Paypal bank account, 
 csvfix from http://neilb.bitbucket.org/csvfix/. Can be installed via homebrew (`brew install csv-fix`) or [here are some instructions for linux](http://www.interesting2me.com/install-csvfix-ubuntu/)
 
 ##Installation##
-Download PiTXi to a folder on your machine. The only required file is pitxi.sh. The accountcodes.csv file is an example only - it shows you what you would enter - the Paypal description on the left, the account code on the right.
+Download PiTXi to a folder on your machine. The only required file is pitxi.sh. The lookupvalues.csv file is an example only - it shows you what you would enter - the Paypal description on the left, the account code on the right.
 
 Open up a shell prompt and navigate to your folder. Run `chmod u+x pitxi.sh` to make it executable.
 
 ##Usage##
 ```
-./pitxi [-d -u -v -t -a -h] {one option only}
+./pitxi.sh [-d -u -v -t -a -h] {one option only}
   -d  download missing files from Paypal, store them in /PPLCSVfiles
   -u  download using a new sftp username/password
-  -v  validate against accountcodes.csv and report any missing ones
+  -v  validate against lookupvalues.csv and report any missing ones
   -t  export output file. must have run -d first
   -a  same as d + v + t together.
   -h  display this help text.
@@ -48,9 +48,9 @@ Once you've set up PiTXi for the first time and have your sftp credentials, here
 
 3.  The list of files that have been downloaded is in a file called "missingfiles.txt". That list defines what will be combined later.
 
-4.  Run `./pitxi.sh -v`. This will spit out a list of descriptions that couldn't be found in accountcodes.csv, if it exists. You can updated this file, adding any new codes by opening it (`open accountcodes.csv`)
+4.  Run `./pitxi.sh -v`. This will spit out a list of descriptions that couldn't be found in lookupvalues.csv, if it exists. You can update this file, adding any new data by opening it (`open lookupvalues.csv`)
 
-5.  Run `./pitxi.sh -t`. This will create a new file called "importToXero[DATE].csv". You are welcome to run this again and again until all of the account codes are there, or you are happy with the ones that are missing.
+5.  Run `./pitxi.sh -t`. This will create a new file called "importToXero[DATE].csv". You are welcome to run this again and again until all of the AccountCodes and extra data are there, or you are happy with the ones that are missing (note: the TaxType column must be entered or your upload will fail)
 
 6.  Log into Xero, go to "Invoices" and click the "Import" button. There you can upload the csv file. The invoices will be imported as drafts, which you can probably "Select All" and "Approve".
 
