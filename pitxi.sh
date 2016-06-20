@@ -145,11 +145,16 @@ rm -f .credentials_tmp
 
 vl () #Validates the paypal data against Account Codes in a separate file (kind of like a vlookup).
 {
-	#test for existence of .val_AccountCodes.txt, create it if not there.
+	#test for existence of the PPLCSVFiles folder
+  if [ ! -d PPLCSVFiles ]; then
+    echo "the folder PPLCSVFiles doesn't exist. run ./"$bname" -d first"
+    exit 1
+  fi
+  #test for existence of .val_AccountCodes.txt, create it if not there.
 	if [ ! -f .val_AccountCodes.txt ]; then
 		echo "# .val_AccountCodes.txt
-required    20
-lookup      *      20:1  ../accountcodes.csv" > .val_AccountCodes.txt
+required    23
+lookup      *      23:1  ../accountcodes.csv" > .val_AccountCodes.txt
 	fi
 	#test for existence of accountcodes.txt
 	if [ ! -f accountcodes.csv ]; then
@@ -165,29 +170,22 @@ lookup      *      20:1  ../accountcodes.csv" > .val_AccountCodes.txt
 	fi
 	b=$(tr -s '\r\n' " " <missingfiles.txt)
 	if test "$b" != ''; then
-    echo "Validating output against accountcodes.txt. These lines are missing:
+    echo "Checking new data against the 'PaypalItemName' column in accountcodes.txt. These items are missing from that column:
     "
     cd PPLCSVFiles/
   	csvfix unique $b |
   	csvfix remove -fc 0:6 |
-  	csvfix trim -f 7,8 -w 10,10 |
-  	csvfix date_iso -f 7,8 -m 'y/m/d' |
-  	csvfix date_format -f 7,8 -fmt 'dd/mm/yyyy' |
-  	csvfix edit -e s/^0*// -f 3 |
-  	csvfix merge -f 2,3 -s " | " -p 2 -k |
-  	csvfix put -p 71 -v "1" |
-  	csvfix put -p 72 -v "BAS Excluded" |
-  	csvfix eval -r 11,'($11)/100' -ifn |
-  	csvfix eval -if 'match($10,"DR")' -r '11,-$11' -r '11,$11' |
-  	csvfix order -f 50,22,33,34,73,73,35:38,4,2,8,9,73,24,71,11,73,24,72,73,73,73,73,12,73 |
-  	csvfix validate -vf ../.val_AccountCodes.txt -ec |
-  	grep "lookup of '"
+  	csvfix validate -vf ../.val_AccountCodes.txt -ec -ifn |
+  	grep "lookup of '" |
+    #sed 's/.{10}//;s/.{27}$//'
+    sed -l "s/lookup of '//;s/' in ..\/accountcodes.csv failed//"
   	cd ..
   	echo "
 You need to add the missing account data above (if any) to accountcodes.csv. Then run ./"$bname" -t"
   else
     echo "There were no new files on the Paypal server. Check again with ./"$bname" -d"
   fi
+  rm -f .val_AccountCodes
 }
 
 tl () #performs the merging and conversion from paypal csv files into to a file that can be uploaded to Xero.
@@ -228,13 +226,11 @@ y/n ";;
   	csvfix date_format -f 7,8 -fmt 'dd/mm/yyyy' |
   	csvfix edit -e s/^0*// -f 3 |
   	csvfix merge -f 2,3 -s " | " -p 2 -k |
-  	csvfix put -p 71 -v "1" |
-  	csvfix put -p 72 -v "BAS Excluded" |
   	csvfix eval -r 11,'($11)/100' -ifn |
   	csvfix eval -if 'match($10,"DR")' -r '11,-$11' -r '11,$11' |
-  	csvfix order -f 50,22,33,34,73,73,35:38,4,2,8,9,73,24,71,11,73,24,72,73,73,73,73,12,73 |
-  	csvfix join -f 20:1 -oj - ../accountcodes.csv |
-  	csvfix order -f 1:19,28,21:27 -hdr "*ContactName,EmailAddress,POAddressLine1,POAddressLine2,POAddressLine3,POAddressLine4,POCity,PORegion,POPostalCode,POCountry,*InvoiceNumber,Reference,*InvoiceDate,*DueDate,InventoryItemCode,*Description,*Quantity,*UnitAmount,Discount,*AccountCode,*TaxType,TrackingName1,TrackingOption1,TrackingName2,TrackingOption2,Currency,BrandingTheme" -o ../importToXero$(date +%F).csv
+    csvfix put -p 71 -v "1" |
+  	csvfix join -f 24:1 -oj - ../accountcodes.csv |
+  	csvfix order -f 50,22,33,34,79,79,35:38,4,2,8,9,78,24,71,11,79,72:77,12,79 -hdr "*ContactName,EmailAddress,POAddressLine1,POAddressLine2,POAddressLine3,POAddressLine4,POCity,PORegion,POPostalCode,POCountry,*InvoiceNumber,Reference,*InvoiceDate,*DueDate,InventoryItemCode,*Description,*Quantity,*UnitAmount,Discount,*AccountCode,*TaxType,TrackingName1,TrackingOption1,TrackingName2,TrackingOption2,Currency,BrandingTheme" -o ../importToXero$(date +%F).csv
   	cd ..
 
   	echo "A file named 'importToXero"$(date +%F)".csv' has been created, this can be uploaded to Xero.
