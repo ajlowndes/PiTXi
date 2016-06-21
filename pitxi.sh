@@ -11,18 +11,19 @@ usage () #usage instructions
   Downloads latest payments CSV from from sftp://reports.paypal.com,
   merges them and creates a csv that can be uploaded to Xero as new invoices.
 
-  Usage : ./$bname [-d -v -t | -h] {one option only}
+  Usage : ./$bname [-d -v -t -a | -h] {one option only}
     -d  download missing files from Paypal, store them in /PPLCSVfiles
     -u  download using a new sftp username/password
     -v  validate against lookupvalues.csv and report any missing ones
-    -t  export output file. must have run -d first
+    -t  transform data to output file. must have run -d first
+    -a  equivalent to -d -v -t
     -h  display this help text.
 
 EOF
   exit 0
 }
 
-dl () # connects to sftp://reports.paypal.com, downloads any missing files to /PPLCSVFiles
+download () # connects to sftp://reports.paypal.com, downloads any missing files to /PPLCSVFiles
 {
   if [ ! -d PPLCSVFiles ]; then
     read -p "The PPLCSVFiles directory doesn't exist. This means the last 45 days of transactions will be downloaded. Are you happy with this?
@@ -30,7 +31,7 @@ y/n " yn
     while true; do
       case $yn in
         [Yy]* )
-          echo "Okay, creating the folder. Feel free to edit missingfiles.txt to determine which files will be combined when you run ./"$bname" -d"
+          echo "Okay, creating the folder. Feel free to edit newfiles.txt to determine which files will be combined when you run ./"$bname" -d"
           mkdir PPLCSVFiles
           break
           ;;
@@ -55,26 +56,42 @@ y/n ";;
     echo `security find-generic-password -s paypalsftp -w` >> .credentials_tmp
   fi
   echo "
-Connecting to Paypal and downloading missing files
-	"
+Connecting to Paypal"
 	expect << 'EOS'
   log_user 0
 	set send_human {.1 .3 1 .05 2}
 	spawn sftp [exec sed "1p;d" .credentials_tmp]@reports.paypal.com:/ppreports/outgoing
-  expect "password:"
-	send "[exec sed "2p;d" .credentials_tmp]\n"
+  set timeout 30
   expect {
-    "sftp>" {
+    "Password:" {
     # exp_continue
     } timeout {
     send_user "
   *** Connection timed out. Check connection and verify the username/password"; exit 1
     }
   }
+  puts "Authenticating"
+	send "[exec sed "2p;d" .credentials_tmp]\n"
+  #log_user 1
+  expect {
+    "sftp>" {
+    # exp_continue
+    } timeout {
+    send_user "
+  *** Connection timed out. Check connection"; exit 1
+    }
+  }
   puts "Getting Remote File List"
-  log_file -noappend .RemoteFileList.txt
-  send -h "ls -1\n"
-	expect "sftp>"
+  log_file -a -noappend .RemoteFileList.txt
+  send "ls -1\n"
+  expect {
+    "sftp>" {
+    # exp_continue
+    } timeout {
+    send_user "
+  *** Connection timed out. Check connection"; exit 1
+    }
+  }
   log_file
 	system sed -i '' '/ls -1/d' ./.RemoteFileList.txt
 	system sed -i '' '/sftp>/d' ./.RemoteFileList.txt
@@ -88,7 +105,7 @@ Connecting to Paypal and downloading missing files
     if {[lindex $::errorCode 0] eq "CHILDSTATUS"} {
       if {[lindex $::errorCode 2] == 1} {
         # send output without "child process exited abnormally" message
-        set filename "missingfiles.txt"
+        set filename "newfiles.txt"
         set fileId [open $filename "w"]
         puts -nonewline $fileId [string replace $output end-31 end ""]
         close $fileId
@@ -100,22 +117,30 @@ Connecting to Paypal and downloading missing files
     }
   }
   sleep 1
-  if {[file size missingfiles.txt] == 0} {
+  if {[file size newfiles.txt] == 0} {
     sleep 1
     send "bye\n"
     puts "
 There are no new files on the Paypal server."
     interact
   } else {
-		set f [open "missingfiles.txt"]
+		set f [open "newfiles.txt"]
 		while {[gets $f line] != -1} {
 			send "get $line PPLCSVFiles/$line\n"
-			expect "sftp>"
+      puts "Fetching $line..."
+      expect {
+        "sftp>" {
+        # exp_continue
+        } timeout {
+        send_user "
+      *** Connection timed out. Check connection"; exit 1
+        }
+      }
 	}
 	close $f
 	send "bye\r"
 	puts "
-Missing Files have been downloaded, the list is stored in missingfiles.txt."
+Missing Files have been downloaded to /PPLCSVFiles, the list is stored in newfiles.txt."
 	}
 EOS
 security find-generic-password -s paypalsftp >/dev/null 2>/dev/null #test if entry exists in osx keychain
@@ -128,7 +153,7 @@ y/n " yn
       [Yy]* )
         security add-generic-password -s paypalsftp -a `sed '1p;d' .credentials_tmp` -w `sed '2p;d' .credentials_tmp` -U
         rm -f .credentials_tmp
-        echo "new credentials saved."
+        echo "credentials saved."
         break
         ;;
       [Nn]* )
@@ -143,31 +168,60 @@ fi
 rm -f .credentials_tmp
 }
 
-vl () #Validates the paypal data against Account Codes in a separate file (kind of like a vlookup).
+parseMissing ()
+{
+  b=$(tr -s '\r\n' " " <newfiles.txt)
+  cd PPLCSVFiles/
+  c=$(csvfix unique $b |
+  csvfix remove -fc 0:6 |
+  csvfix validate -vf ../.val_AccountCodes -ec -ifn |
+  grep "lookup of '" |
+  sed -l "s/lookup of '//;s/' in ..\/lookupvalues.csv failed//" |
+  sort -u)
+  cd ..
+}
+
+addMissing ()
+{
+  if [ ! -f lookupvalues.csv ]; then
+    echo "PaypalItemName,AccountCode,TaxType,TrackingName1,TrackingOption1,TrackingName2,TrackingOption2,InventoryItemCode" > lookupvalues.csv
+    echo "lookupvalues.csv created. "
+  fi
+  if [ -n "$c" ]; then
+    echo "Added missing lines."
+  else
+    parseMissing
+    echo "Adding these missing lines. Please open the lookupvalues.csv file and add matching data (blank fields are ok)
+$c"
+  fi
+  echo "$c" | sed 's/^    //;s/"/""/g;s/^/"/;s/$/"/' >> lookupvalues.csv
+
+}
+
+validate () #Validates the paypal data against Account Codes in a separate file (kind of like a vlookup).
 {
 	#test for existence of the PPLCSVFiles folder
   if [ ! -d PPLCSVFiles ]; then
     echo "the folder PPLCSVFiles doesn't exist. Run ./"$bname" -d first"
     exit 1
   fi
-  #test for existence of .val_AccountCodes.txt, create it if not there.
-	if [ ! -f .val_AccountCodes.txt ]; then
-		echo "# .val_AccountCodes.txt
+  #test for existence of .val_AccountCodes, create it if not there.
+	if [ ! -f .val_AccountCodes ]; then
+		echo "# .val_AccountCodes
 required    23
-lookup      *      23:1  ../lookupvalues.csv" > .val_AccountCodes.txt
+lookup      *      23:1  ../lookupvalues.csv" > .val_AccountCodes
 	fi
-	#test for existence of accountcodes.txt
+	#test for existence of lookupvalues
 	if [ ! -f lookupvalues.csv ]; then
     while true; do
 		  read -p "lookupvalues.csv missing. Nothing to validate against!
-Do you want to create it with the left column pre-populated with missing accountcodes?
-y/n" yn
+Do you want to create it with the left column pre-populated with missing descriptions?
+y/n " yn
       case $yn in
         [Yy]* )
-          echo "PaypalItemName,AccountCode,TaxType,TrackingName1,TrackingOption1,TrackingName2,TrackingOption2,InventoryItemCode" > lookupvalues.csv
-          echo "lookupvalues.csv created. continuing"
-          vl AddMissing
+          addMissing
           exit 0
+          break
           ;;
         [Nn]* )
           exit 1
@@ -177,42 +231,55 @@ y/n ";;
       esac
     done
 	fi
-	#test for existence of missingfiles.txt.
-	if [ ! -f missingfiles.txt ]; then
-		echo "missingfiles.txt not there. Run ./"$bname" -d first.
+	#test for existence of newfiles.txt.
+	if [ ! -f newfiles.txt ]; then
+		echo "newfiles.txt not there. Run ./"$bname" -d first.
 		"
 		exit 1
 	fi
-	b=$(tr -s '\r\n' " " <missingfiles.txt)
+	b=$(tr -s '\r\n' " " <newfiles.txt)
 	if test "$b" != ''; then
-    echo "Checking new data against the 'PaypalItemName' column in accountcodes.txt. These items are missing from that column:
-    "
-    cd PPLCSVFiles/
-  	csvfix unique $b |
-  	csvfix remove -fc 0:6 |
-  	csvfix validate -vf ../.val_AccountCodes.txt -ec -ifn |
-  	grep "lookup of '" |
-    sed -l "s/lookup of '//;s/' in ..\/lookupvalues.csv failed//" |
-    if [ $1 = "AddMissing" ]; then tee lookupvalues.csv fi
-  	cd ..
-  	echo "
-You need to add the missing account data above (if any) to lookupvalues.csv. Then run ./"$bname" -t"
+    parseMissing
+    if [ ! -z "$c" ]; then
+      echo "These items are missing from the 'PaypalItemName' column in lookupvalues.csv:
+$c"
+      while true; do
+      read -p "
+  Do you want to add these to the lookupvalues.csv file?
+y/n " yn
+      case $yn in
+        [Yy]* )
+          addMissing "$c"
+          exit 0
+          ;;
+        [Nn]* )
+          exit 1
+          ;;
+        * ) echo "Please answer y or n";;
+      esac
+    done
+    else
+      echo "All validated! Continue by running ./"$bname" -t"
+      exit 0
+    fi
+
   else
     echo "There were no new files on the Paypal server. Check again with ./"$bname" -d"
   fi
   rm -f .val_AccountCodes
 }
 
-tl () #performs the merging and conversion from paypal csv files into to a file that can be uploaded to Xero.
+transform () #performs the merging and conversion from paypal csv files into to a file that can be uploaded to Xero.
 {
-	#test for existence of accountcodes.txt
+	#test for existence of lookupvalues.csv
 	if [ ! -f lookupvalues.csv ]; then
   		while true; do
 	  		read -p "lookupvalues.csv missing. Run anyway?
 y/n " yn
 	     	case $yn in
 	  	    [Yy]* )
-					   touch lookupvalues.csv
+					   echo "lookupvalues.csv created."
+             addMissing
 					   echo "Warning: the AccountCodes column will be empty.
 					   "
 					  break
@@ -225,13 +292,13 @@ y/n ";;
 			esac
 		done
 	fi
-	#test for existence of missingfiles.txt.
-	if [ ! -f missingfiles.txt ]; then
-  		echo "missingfiles.txt not there. Run ./"$bname" -d first.
+	#test for existence of newfiles.txt.
+	if [ ! -f newfiles.txt ]; then
+  		echo "newfiles.txt not there. Run ./"$bname" -d first.
   		"
   		exit 1
 	fi
-  b=$(tr -s '\r\n' " " <missingfiles.txt)
+  b=$(tr -s '\r\n' " " <newfiles.txt)
   if test "$b" != ''; then
   	cd PPLCSVFiles/
   	csvfix unique $b |
@@ -265,27 +332,27 @@ fi
 while getopts ":dvtau" opt; do
   case $opt in
     d)
-	  dl
+	  download
       exit 0
       ;;
     v)
-	  vl
+	  validate
       exit 0
       ;;
     t)
-	  tl
+	  transform
       exit 0
       ;;
     u)
-      dl useNewCredentials
+      download useNewCredentials
       exit 0
       ;;
     a)
       echo "Downloading, validating (simply for the excercise) and creating the file
 	  "
-	  dl
-    vl
-	  tl
+	  download
+    validate
+	  transform
 	  echo "Beware of the missing AccountCodes - these need to be added to a separate file called 'AccountCodes.csv' for this program to work in future.
 	  "
       exit 0

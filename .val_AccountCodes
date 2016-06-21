@@ -1,0 +1,3 @@
+# .val_AccountCodes
+required    23
+lookup      *      23:1  ../lookupvalues.csv

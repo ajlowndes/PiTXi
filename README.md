@@ -46,7 +46,7 @@ Once you've set up PiTXi for the first time and have your sftp credentials, here
 
 2.  Once it's there, open up a shell prompt and navigate to your folder. Run `./pitxi.sh -d` which will connect to the sftp server, collect a list of files and download them all to a new folder called "PPLCSVFiles". In future if you run this command it will only download new files.
 
-3.  The list of files that have been downloaded is in a file called "missingfiles.txt". That list defines what will be combined later.
+3.  The list of files that have been downloaded is in a file called "newfiles.txt". That list defines what will be combined later.
 
 4.  Run `./pitxi.sh -v`. This will spit out a list of descriptions that couldn't be found in lookupvalues.csv, if it exists. You can update this file, adding any new data by opening it (`open lookupvalues.csv`)
 
