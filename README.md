@@ -14,7 +14,7 @@ If you have a separate file (lookupvalues.csv) with descriptions and AccountCode
 So after the import into Xero, you just need to go to your Paypal bank account, click on the "reconcile" tab and click "OK" to confirm each payment matches up with the correct uploaded invoice. Much faster than manually coding hundreds/thousands of transactions!
 
 ##Requirements##
-* This is a shell script, and I'm running on OSX, it will likely work on all UNIX systems
+* This is a shell script, and I'm running on OSX, though it will likely work on all UNIX systems
 * Must have signed up for sftp access from Paypal. Basically involves sending an email to paypal - [see this link for more info](https://www.paypalobjects.com/webstatic/en_US/developer/docs/pdf/PP_LRD_SecureFTP.pdf)
 * Must create a sftp access username and password, and set your "Transactions detail" reports to be delivered as CSV via Secure FTP (Paypal > Reports > Transactions > Transactions detail > Manage Subscription)
 * Test your sftp credentials with `sftp username@reports.paypal.com:/ppreports/outgoing`. You should be able to log in and see the daily csv files there (`ls -1`). If you only just signed up there won't be any there until tomorrow.
