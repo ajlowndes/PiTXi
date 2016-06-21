@@ -260,7 +260,6 @@ y/n " yn
     done
     else
       echo "All validated! Continue by running ./"$bname" -t"
-      exit 0
     fi
 
   else
