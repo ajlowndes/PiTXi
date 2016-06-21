@@ -24,7 +24,7 @@ So after the import into Xero, you just need to go to your Paypal bank account, 
 csvfix from http://neilb.bitbucket.org/csvfix/. Can be installed via homebrew (`brew install csv-fix`) or [here are some instructions for linux](http://www.interesting2me.com/install-csvfix-ubuntu/)
 
 ##Installation##
-Download PiTXi to a folder on your machine. The only required file is pitxi.sh. The lookupvalues.csv file is an example only - it shows you what you would enter - the Paypal description on the left, the account code on the right.
+Download PiTXi to a folder on your machine. The only required file is pitxi.sh.
 
 Open up a shell prompt and navigate to your folder. Run `chmod u+x pitxi.sh` to make it executable.
 

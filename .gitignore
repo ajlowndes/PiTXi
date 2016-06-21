@@ -4,10 +4,10 @@
 #ignore these files and folders to that PiTXi generates
 .LocalFileList.txt
 .RemoteFileList.txt
-missingfiles.txt
+newfiles.txt
 PPLCSVFiles
 importToXero*
-.credentials
+lookupvalues.csv
 
 #ignore my notes file
 pitxi programming notes
