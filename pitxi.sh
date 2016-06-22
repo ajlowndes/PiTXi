@@ -5,10 +5,9 @@ usage () #usage instructions
 {
   cat <<EOF
 
-  PiTXi - Paypal Invoices To Xero Invoices
-  (It's actually Paypal SALES To Xero Invoices, but PsTXi doesn't sound as cool)
+  PiTXi - Paypal Income To Xero Invoices
 
-  Downloads latest payments CSV from from sftp://reports.paypal.com,
+  Downloads latest transaction records CSV from from sftp://reports.paypal.com,
   merges them and creates a csv that can be uploaded to Xero as new invoices.
 
   Usage : ./$bname [-d -v -t -a | -h] {one option only}

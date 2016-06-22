@@ -1,15 +1,15 @@
-# PiTXi - Paypal Invoices To Xero Invoices #
-(It's actually Paypal _SALES_ To Xero Invoices, but PsTXi doesn't sound as cool)
+# PiTXi - Paypal Income To Xero Invoices #
 
 ##Introduction##
-Xero has the ability to capture Paypal transactions, treating it more or less like a bank account. But in some cases a LOT of transactions are created every day, and matching invoices are not created in Xero automatically. Compounding the problem, all that ends up in Xero is the name and email of the payee (which might or might not be the name of your customer -e.g. if a parent or friend pays for someone), a transaction number (which Paypal generates and does NOT match any invoice numbers your Point Of Sale system might have generated), date etc. This is often not enough to quickly identify and code the transaction. Paypal does have a lot more info on their system about the transaction though.
+Xero has the ability to capture Paypal transactions, treating it more or less like a bank account. But in some cases a LOT of transactions are created every day, and matching invoices are not created in Xero automatically. Compounding the problem, all that ends up in Xero is the name and email of the payee (which might or might not be the name of your customer -e.g. if a parent or friend pays for someone), a transaction number (which Paypal generates and does NOT match any invoice numbers your Point Of Sale system might have generated), date etc. This is often not enough to quickly identify and code the transaction. Paypal does have a lot more info on their system about the transaction though - and in my case Paypal's `ItemName` field has a description like _Registration for 'Oceania and National Lead and Speed Climbing Championships' (17 Jun 2016 4:00 PM - 19 Jun 2016 4:00 PM, Sydne_ and this tells me everything I need to know about what `AccountCode` to apply in Xero, what `TaxType` to apply, what `TrackingName` and `TrackingOption`(s) to apply, and what `InventoryItemCode` to apply (if applicable).
 
-So there needs to be a way to collect the extra transaction data from Paypal, transform it into a format that can be imported as Invoices into Xero. Enter PiTXi.
+So there needs to be a way to collect the extra transaction data from Paypal, and transform it into a format that can be imported as Invoices into Xero. 
+Enter PiTXi.
 
 ##What it does##
-This command line script downloads the latest daily CSV file(s) from from sftp://reports.paypal.com, merges them, and creates a csv that can be imported to Xero as new invoices.
+This script downloads the latest daily CSV file(s) from from sftp://reports.paypal.com, merges them, and creates a csv that can be imported to Xero as new invoices.
 
-If you have a separate file (lookupvalues.csv) with descriptions and AccountCode, TaxType, TrackingNames, and Tracking Options listed in two columns then PiTXi will enter them into the CSV file for you. Note that at least the TaxTypes must be entered or the upload will fail.
+If you have a separate file (lookupvalues.csv) with descriptions and AccountCode, TaxType, TrackingNames and TrackingOptions and InventoryItem Code listed in additional columns, then PiTXi will look them up and enter them into the output file for you. Note that at least the TaxTypes must be entered, or Xero won't allow you to upload.
 
 So after the import into Xero, you just need to go to your Paypal bank account, click on the "reconcile" tab and click "OK" to confirm each payment matches up with the correct uploaded invoice. Much faster than manually coding hundreds/thousands of transactions!
 
@@ -17,16 +17,16 @@ So after the import into Xero, you just need to go to your Paypal bank account, 
 * This is a shell script, and I'm running on OSX, though it will likely work on all UNIX systems
 * Must have signed up for sftp access from Paypal. Basically involves sending an email to paypal - [see this link for more info](https://www.paypalobjects.com/webstatic/en_US/developer/docs/pdf/PP_LRD_SecureFTP.pdf)
 * Must create a sftp access username and password, and set your "Transactions detail" reports to be delivered as CSV via Secure FTP (Paypal > Reports > Transactions > Transactions detail > Manage Subscription)
-* Test your sftp credentials with `sftp username@reports.paypal.com:/ppreports/outgoing`. You should be able to log in and see the daily csv files there (`ls -1`). If you only just signed up there won't be any there until tomorrow.
+* Test your sftp credentials with `$ sftp username@reports.paypal.com:/ppreports/outgoing`. You should be able to log in and see the daily csv files there (`$ ls -1`). If you only just signed up there won't be any there until tomorrow.
 
 
 ##Dependencies##
-csvfix from http://neilb.bitbucket.org/csvfix/. Can be installed via homebrew (`brew install csv-fix`) or [here are some instructions for linux](http://www.interesting2me.com/install-csvfix-ubuntu/)
+csvfix from http://neilb.bitbucket.org/csvfix/. Can be installed via homebrew (`$ brew install csv-fix`) or [here are some instructions for linux](http://www.interesting2me.com/install-csvfix-ubuntu/)
 
 ##Installation##
 Download PiTXi to a folder on your machine. The only required file is pitxi.sh.
 
-Open up a shell prompt and navigate to your folder. Run `chmod u+x pitxi.sh` to make it executable.
+Open up a shell prompt and navigate to your folder. Run `$ chmod u+x pitxi.sh` to make it executable.
 
 ##Usage##
 ```
@@ -44,13 +44,13 @@ Once you've set up PiTXi for the first time and have your sftp credentials, here
 
 1.  Wait a day for the first CSV file to show up in the sftp server. Sorry that's a Paypal thing.
 
-2.  Once it's there, open up a shell prompt and navigate to your folder. Run `./pitxi.sh -d` which will connect to the sftp server, collect a list of files and download them all to a new folder called "PPLCSVFiles". In future if you run this command it will only download new files.
+2.  Once it's there, open up a shell prompt and navigate to your folder. Run `$ ./pitxi.sh -d` which will connect to the sftp server, collect a list of files and download them all to a new folder called "PPLCSVFiles". In future if you run this command it will only download new files.
 
-3.  The list of files that have been downloaded is in a file called "newfiles.txt". That list defines what will be combined later.
+3.  The list of files that have been recently downloaded is in a file called "newfiles.txt". That list defines what will be combined later.
 
-4.  Run `./pitxi.sh -v`. This will spit out a list of descriptions that couldn't be found in lookupvalues.csv, if it exists. You can update this file, adding any new data by opening it (`open lookupvalues.csv`)
+4.  Run `$ ./pitxi.sh -v`. This will spit out a list of `ItemNames` that couldn't be found in lookupvalues.csv. If the file doesn't exist, PiTXi will create it for you - so you can then run `$ open lookupvalues.csv`
 
-5.  Run `./pitxi.sh -t`. This will create a new file called "importToXero[DATE].csv". You are welcome to run this again and again until all of the AccountCodes and extra data are there, or you are happy with the ones that are missing (note: the TaxType column must be entered or your upload will fail)
+5.  Run `$ ./pitxi.sh -t`. This will create a new file called "importToXero[DATE].csv". You are welcome to run this again and again until all of the AccountCodes and extra data are there, or you are happy with the ones that are missing (note: the TaxType column must be entered or your upload will fail)
 
 6.  Log into Xero, go to "Invoices" and click the "Import" button. There you can upload the csv file. The invoices will be imported as drafts, which you can probably "Select All" and "Approve".
 
