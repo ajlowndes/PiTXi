@@ -9,7 +9,7 @@ Enter PiTXi.
 ##What it does##
 This script downloads the latest daily CSV file(s) from from sftp://reports.paypal.com, merges them, and creates a csv that can be imported to Xero as new invoices.
 
-If you have a separate file (lookupvalues.csv) with descriptions and AccountCode, TaxType, TrackingNames and TrackingOptions and InventoryItem Code listed in additional columns, then PiTXi will look them up and enter them into the output file for you. Note that at least the TaxTypes must be entered, or Xero won't allow you to upload.
+If you have a separate file (lookupvalues.csv) with descriptions and AccountCode, TaxType, TrackingNames and TrackingOptions and InventoryItem Code listed in additional columns, then PiTXi will look them up and enter them into the output file for you.
 
 So after the import into Xero, you just need to go to your Paypal bank account, click on the "reconcile" tab and click "OK" to confirm each payment matches up with the correct uploaded invoice. Much faster than manually coding hundreds/thousands of transactions!
 
