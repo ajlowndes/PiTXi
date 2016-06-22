@@ -50,7 +50,7 @@ Once you've set up PiTXi for the first time and have your sftp credentials, here
 
 4.  Run `$ ./pitxi.sh -v`. This will spit out a list of `ItemNames` that couldn't be found in lookupvalues.csv. If the file doesn't exist, PiTXi will create it for you - so you can then run `$ open lookupvalues.csv`
 
-5.  Run `$ ./pitxi.sh -t`. This will create a new file called "importToXero[DATE].csv". You are welcome to run this again and again until all of the AccountCodes and extra data are there, or you are happy with the ones that are missing (note: the TaxType column must be entered or your upload will fail)
+5.  Run `$ ./pitxi.sh -t`. This will create a new file called "importToXero[DATE].csv". You are welcome to run this again and again until all of the AccountCodes and extra data are there, or you are happy with the ones that are missing (note: if you enter an AccountCode then the TaxType column must also be filled or your upload will fail - that's Xero's requirement)
 
 6.  Log into Xero, go to "Invoices" and click the "Import" button. There you can upload the csv file. The invoices will be imported as drafts, which you can probably "Select All" and "Approve".
 
