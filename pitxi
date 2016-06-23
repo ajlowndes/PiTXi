@@ -169,6 +169,12 @@ rm -f .credentials_tmp
 
 parseMissing ()
 {
+  #test for existence of .val_AccountCodes, create it if not there.
+  if [ ! -f .val_AccountCodes ]; then
+      echo "# .val_AccountCodes
+required    23
+lookup      *      23:1  ../lookupvalues.csv" > .val_AccountCodes
+    fi
   b=$(tr -s '\r\n' " " <newfiles.txt)
   cd PPLCSVFiles/
   c=$(csvfix unique $b |
@@ -204,12 +210,6 @@ validate () #Validates the paypal data against Account Codes in a separate file 
     echo "the folder PPLCSVFiles doesn't exist. Run ./"$bname" -d first"
     exit 1
   fi
-  #test for existence of .val_AccountCodes, create it if not there.
-	if [ ! -f .val_AccountCodes ]; then
-		echo "# .val_AccountCodes
-required    23
-lookup      *      23:1  ../lookupvalues.csv" > .val_AccountCodes
-	fi
 	#test for existence of lookupvalues
 	if [ ! -f lookupvalues.csv ]; then
     while true; do
@@ -269,7 +269,13 @@ y/n " yn
 
 transform () #performs the merging and conversion from paypal csv files into to a file that can be uploaded to Xero.
 {
-	#test for existence of lookupvalues.csv
+	 #test for existence of newfiles.txt.
+    if [ ! -f newfiles.txt ]; then
+        echo "newfiles.txt not there. Run ./"$bname" -d first.
+        "
+        exit 1
+    fi
+  #test for existence of lookupvalues.csv
 	if [ ! -f lookupvalues.csv ]; then
   		while true; do
 	  		read -p "lookupvalues.csv missing. Run anyway?
@@ -289,12 +295,6 @@ y/n " yn
 y/n ";;
 			esac
 		done
-	fi
-	#test for existence of newfiles.txt.
-	if [ ! -f newfiles.txt ]; then
-  		echo "newfiles.txt not there. Run ./"$bname" -d first.
-  		"
-  		exit 1
 	fi
   b=$(tr -s '\r\n' " " <newfiles.txt)
   if test "$b" != ''; then
@@ -319,6 +319,7 @@ Note that some transactions will require manual feeding - such as 'Shopping Cart
   else
     echo "There were no new files on the Paypal server. Check again with ./"$bname" -d"
   fi
+  rm -f ".val_AccountCodes"
 }
 
 # From here down is all to do with handling the flags you type into the command line, after the name of the script.
