@@ -22,6 +22,32 @@ EOF
   exit 0
 }
 
+checkfolder ()
+{
+  echo "checking folder"
+  if [ -n "$(ls -A)" ] && [ ! -d PPLCSVFiles ] && [ ! -f .val_AccountCodes ] && [ ! -f .LocalFileList ] && [ ! -f .RemoteFileList ] && [ ! -f newfiles.txt ] && [ ! -f lookupvalues.csv ] && [ ! -f importToXero* ]
+  then
+    echo "directory is not empty and doesn't have any PiTXi files in it..."
+    read -p "Warning: It looks like the current folder has some other files in it. It is better to run PiTXi in a dedicated folder on your machine. Continue anyway?
+  yn " yn
+    while true; do
+      case $yn in
+        [Yy]* )
+          break
+          ;;
+        [Nn]* )
+          echo "Aborting."
+          exit 1
+          ;;
+        * ) echo "Please answer yes or no.
+  y/n ";;
+      esac
+    done
+  else
+    echo "directory is empty or has already been used for PiTXi"
+  fi
+}
+
 download () # connects to sftp://reports.paypal.com, downloads any missing files to /PPLCSVFiles
 {
   if [ ! -d PPLCSVFiles ]; then
@@ -331,25 +357,30 @@ fi
 while getopts ":dvtau" opt; do
   case $opt in
     d)
-	  download
+	  checkfolder
+    download
       exit 0
       ;;
     v)
+    checkfolder
 	  validate
       exit 0
       ;;
     t)
-	  transform
+	  checkfolder
+    transform
       exit 0
       ;;
     u)
+      checkfolder
       download useNewCredentials
       exit 0
       ;;
     a)
+    checkfolder
       echo "Downloading, validating (simply for the excercise) and creating the file
 	  "
-	  download
+    download
     validate
 	  transform
 	  echo "Beware of the missing AccountCodes - these need to be added to a separate file called 'AccountCodes.csv' for this program to work in future.
