@@ -238,7 +238,6 @@ y/n ";;
 	fi
 	b=$(tr -s '\r\n' " " <newfiles.txt)
 	if test "$b" != ''; then
-    echo "$c" >b.txt
     parseMissing
     if [[ ! "$c" =~ ^\ +$ ]]; then
       echo "These items are missing from the 'PaypalItemName' column in lookupvalues.csv:
