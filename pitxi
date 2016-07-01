@@ -44,7 +44,7 @@ checkfolder ()
       esac
     done
   else
-    echo "directory is empty or has already been used for PiTXi"
+    echo "...all good."
   fi
 }
 
@@ -331,8 +331,10 @@ y/n ";;
   	csvfix date_iso -f 7,8 -m 'y/m/d' |
   	csvfix date_format -f 7,8 -fmt 'dd/mm/yyyy' |
   	csvfix edit -e s/^0*// -f 3 |
+    csvfix eval -if 'match($9,"DR")' -r '3,"CN".$3' -r '3,$3' |
   	csvfix merge -f 2,3 -s " | " -p 2 -k |
   	csvfix eval -r 11,'($11)/100' -ifn |
+
   	csvfix eval -if 'match($10,"DR")' -r '11,-$11' -r '11,$11' |
     csvfix put -p 71 -v "1" |
   	csvfix join -f 24:1 -oj - ../lookupvalues.csv |
