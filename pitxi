@@ -15,6 +15,7 @@ usage () #usage instructions
     -u  download using a new sftp username/password
     -v  validate against lookupvalues.csv and report any missing ones
     -t  transform data to output file. must have run -d first
+    -s  transform the data but use a separate line for Paypal fees (allocate tracking categories etc)
     -a  equivalent to -d -v -t
     -h  display this help text.
 
@@ -325,22 +326,42 @@ y/n ";;
   b=$(tr -s '\r\n' " " <newfiles.txt)
   if test "$b" != ''; then
   	cd PPLCSVFiles/
-  	csvfix unique $b |
-  	csvfix remove -fc 0:6 |
-  	csvfix trim -f 7,8 -w 10,10 |
-  	csvfix date_iso -f 7,8 -m 'y/m/d' |
-  	csvfix date_format -f 7,8 -fmt 'dd/mm/yyyy' |
-  	csvfix edit -e s/^0*// -f 3 |
+    csvfix unique $b |
+    csvfix remove -fc 0:6 |
+    csvfix remove -f 6 -e 'T0400' |
+    csvfix trim -f 7,8 -w 10,10 |
+    csvfix date_iso -f 7,8 -m 'y/m/d' |
+    csvfix date_format -f 7,8 -fmt 'dd/mm/yyyy' |
+    csvfix edit -e s/^0*// -f 3 |
     csvfix eval -if 'match($9,"DR")' -r '3,"CN".$3' -r '3,$3' |
-  	csvfix merge -f 2,3 -s " | " -p 2 -k |
-  	csvfix eval -r 11,'($11)/100' -ifn |
-
-  	csvfix eval -if 'match($10,"DR")' -r '11,-$11' -r '11,$11' |
+    csvfix eval -if 'match($9,"DR")' -r '10,-$10' -r '10,$10' |
+    csvfix eval -r 10,'($10)/100' -ifn |
+    csvfix merge -f 2,3 -s " | " -p 2 -k |
     csvfix put -p 71 -v "1" |
-  	csvfix join -f 24:1 -oj - ../lookupvalues.csv |
-  	csvfix order -f 50,22,33,34,79,79,35:38,4,2,8,9,78,24,71,11,79,72:77,12,79 -hdr "*ContactName,EmailAddress,POAddressLine1,POAddressLine2,POAddressLine3,POAddressLine4,POCity,PORegion,POPostalCode,POCountry,*InvoiceNumber,Reference,*InvoiceDate,*DueDate,InventoryItemCode,*Description,*Quantity,*UnitAmount,Discount,*AccountCode,*TaxType,TrackingName1,TrackingOption1,TrackingName2,TrackingOption2,Currency,BrandingTheme" -o ../importToXero$(date +%F).csv
-  	cd ..
-
+    csvfix join -f 24:1 -oj - ../lookupvalues.csv |
+    csvfix order -f 50,22,33,34,79,79,35:38,4,2,8,9,78,24,71,11,79,72:77,12,79 -hdr "*ContactName,EmailAddress,POAddressLine1,POAddressLine2,POAddressLine3,POAddressLine4,POCity,PORegion,POPostalCode,POCountry,*InvoiceNumber,Reference,*InvoiceDate,*DueDate,InventoryItemCode,*Description,*Quantity,*UnitAmount,Discount,*AccountCode,*TaxType,TrackingName1,TrackingOption1,TrackingName2,TrackingOption2,Currency,BrandingTheme" -o ../importToXero$(date +%F).csv
+    if [ "$1" == "separatePaypalLine" ]; then
+      csvfix unique $b |
+      csvfix remove -fc 0:6 |
+      csvfix remove -f 6 -e 'T0400' |
+      csvfix trim -f 7,8 -w 10,10 |
+      csvfix date_iso -f 7,8 -m 'y/m/d' |
+      csvfix date_format -f 7,8 -fmt 'dd/mm/yyyy' |
+      csvfix eval -if 'match($12,"DR")' -r '13,-$13' -r '13,$13' |
+      csvfix eval -r 13,'($13)/100' -ifn |
+      csvfix merge -f 2,3 -s " | " -p 2 -k |
+      csvfix put -p 71 -v "1" |
+      csvfix put -p 72 -v "PaypalFees" |
+      csvfix join -f 24:1 -oj - ../lookupvalues.csv |
+      #csvfix order -f 50,22,33,34,80,80,35:38,3,2,8,9,79,24,71,14,80,72,74:78,12,80 -hdr "*ContactName,EmailAddress,POAddressLine1,POAddressLine2,POAddressLine3,POAddressLine4,POCity,PORegion,POPostalCode,POCountry,*InvoiceNumber,Reference,*InvoiceDate,*DueDate,InventoryItemCode,*Description,*Quantity,*UnitAmount,Discount,*AccountCode,*TaxType,TrackingName1,TrackingOption1,TrackingName2,TrackingOption2,Currency,BrandingTheme" -o ../paypalFees$(date +%F).csv
+      csvfix order -f 50,22,33,34,80,80,35:38,3,2,8,9,79,24,71,14,80,72,74:78,12,80 -o ../paypalFees$(date +%F).csv
+      #sleep 1
+      mv ../importToXero$(date +%F).csv ../temp$(date +%F).csv
+      csvfix unique -o ../importToXero$(date +%F).csv ../temp$(date +%F).csv ../paypalFees$(date +%F).csv
+      rm -f ../paypalFees$(date +%F).csv
+      rm -f ../temp$(date +%F).csv
+    fi
+    cd ..
   	echo "A file named 'importToXero"$(date +%F)".csv' has been created, this can be uploaded to Xero.
 Note that some transactions will require manual feeding - such as 'Shopping Cart' lines.
     "
@@ -356,7 +377,7 @@ then
 	usage
 fi
 
-while getopts ":dvtau" opt; do
+while getopts ":dvtsau" opt; do
   case $opt in
     d)
 	  checkfolder
@@ -371,6 +392,11 @@ while getopts ":dvtau" opt; do
     t)
 	  checkfolder
     transform
+      exit 0
+      ;;
+    s)
+    checkfolder
+    transform separatePaypalLine
       exit 0
       ;;
     u)
