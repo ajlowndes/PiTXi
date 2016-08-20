@@ -351,10 +351,10 @@ y/n ";;
       csvfix eval -r 13,'($13)/100' -ifn |
       csvfix merge -f 4,3 -s " | " -p 2 -k |
       csvfix put -p 71 -v "1" |
-      csvfix put -p 72 -v "PaypalFeeM" |
+      csvfix put -p 72 -v "PaypalFee" |
       csvfix join -f 24:1 -oj - ../lookupvalues.csv |
       csvfix eval -if 'match($10,"CR")' -r '24,"Paypal Fee: ".$24.". Invoice: ".$4' -r '24,"Paypal Fee reversal: ".$24.". Invoice: ".$4' |
-      csvfix eval -if 'match($74,"Event"' -r '72,"PaypalFeeE"' |
+      csvfix eval -if 'match($75,"Event")' -r '72,"PaypalFeeE"' -r '72,"PaypalFeeM"' |
       csvfix order -f 72,80,80,80,80,80,80,80,80,80,3,2,8,9,79,24,71,14,80,72,74:78,12,80,13 -o ../paypalFees$(date +%F).csv
 
     fi
