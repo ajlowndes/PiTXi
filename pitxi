@@ -340,7 +340,7 @@ y/n ";;
     csvfix merge -f 2,3 -s " | " -p 2 -k |
     csvfix put -p 71 -v "1" |
     csvfix join -f 24:1 -oj - ../lookupvalues.csv |
-    csvfix order -f 50,22,33,34,79,79,35:38,4,2,8,9,78,24,71,11,79,72:77,12,79,10 -o ../importToXero$(date +%F).csv
+    csvfix order -f 50,22,33,34,79,79,35:38,3,4,8,9,78,24,71,11,79,72:77,12,79,10 -o ../importToXero$(date +%F).csv
     if [ "$1" == "treatPaypalFeesAsPurchases" ]; then
       csvfix unique $b |
       csvfix remove -fc 0:6 |
