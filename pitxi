@@ -237,7 +237,7 @@ validate () #Validates the paypal data against Account Codes in a separate file 
     echo "the folder PPLCSVFiles doesn't exist. Run ./"$bname" -d first"
     exit 1
   fi
-	#test for existence of lookupvalues
+	#test for existence of lookupvalues.csv
 	if [ ! -f lookupvalues.csv ]; then
     while true; do
 		  read -p "lookupvalues.csv missing. Nothing to validate against!
