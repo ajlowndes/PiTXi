@@ -84,9 +84,9 @@ y/n ";;
   echo "
 Connecting to Paypal"
 	expect << 'EOS'
-  log_user 0
+  log_user 1
 	set send_human {.1 .3 1 .05 2}
-	spawn sftp [exec sed "1p;d" .credentials_tmp]@reports.paypal.com:/ppreports/outgoing
+	spawn sftp -o KexAlgorithms=diffie-hellman-group1-sha1 [exec sed "1p;d" .credentials_tmp]@reports.paypal.com:/ppreports/outgoing
   set timeout 30
   expect {
     "Password:" {
